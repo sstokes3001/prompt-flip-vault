@@ -1,0 +1,17 @@
+self-contained index.html
+# macOS
+.DS_Store
+
+# Word docs
+*.docx
+~$AI_Hub.docx
+
+# Legacy demo file
+self-contained index.html
+
+# Python logs / caches
+logs/
+__pycache__/
+
+# IDE folders
+.vscode/
