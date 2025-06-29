@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Prompt-Flip Vault – Guided Card Prototype</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        /* ————— RESET + BASE ————— */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f5f7fa;
+            color: #222
+        }
+
+        h1,
+        h2 {
+            font-weight: 600;
+            line-height: 1.2
+        }
+
+        button {
+            cursor: pointer;
+            border: none
+        }
+
+        small {
+            font-size: .75rem;
+            color: #555
+        }
+
+        /* ————— HEADER ————— */
+        header {
+            background: #fff;
+            padding: 2.5rem 1rem 3.5rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, .08)
+        }
+
+        header h1 {
+            font-size: 2rem
+        }
+
+        header p {
+            max-width: 680px;
+            margin: 1rem auto 2rem;
+            line-height: 1.45
+        }
+
+        /* ======= INFOGRAPHIC ======= */
+        .infographic {
+            width: 260px;
+            height: 260px;
+            margin: 0 auto;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .infographic .center {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: #4f6df5;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: .85rem;
+            line-height: 1.25
+        }
+
+        .ring {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            position: absolute;
+            inset: 0;
+            transform: translateX(-40px) translateY(-40px);
+            /* ← adjust 8-14px until it looks right */
+        }
+
+        .ring li {
+            --r: 115px;
+            /* radius */
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #e8edf3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: .75rem;
+            transition: background .2s
+        }
+
+        .ring li:hover {
+            background: #dbe3f0
+        }
+
+        /* angles: -90 -30 30 90 150 210 */
+        .ring li:nth-child(1) {
+            --a: -90deg
+        }
+
+        .ring li:nth-child(2) {
+            --a: -30deg
+        }
+
+        .ring li:nth-child(3) {
+            --a: 30deg
+        }
+
+        .ring li:nth-child(4) {
+            --a: 90deg
+        }
+
+        .ring li:nth-child(5) {
+            --a: 150deg
+        }
+
+        .ring li:nth-child(6) {
+            --a: 210deg
+        }
+
+        .ring li {
+            left: 50%;
+            top: 50%;
+            transform: rotate(var(--a)) translate(var(--r)) rotate(calc(-1*var(--a)))
+        }
+
+        /* —— pulse animation —— */
+        @keyframes pulse {
+            0% {
+                transform: scale(1)
+            }
+
+            50% {
+                transform: scale(1.15)
+            }
+
+            100% {
+                transform: scale(1)
+            }
+        }
+
+        .ring li.pulse {
+            animation: pulse .6s ease
+        }
+
+        /* ————— GRID / FLIP CARD ————— */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            padding: 2rem
+        }
+
+        .flip-card {
+            perspective: 1000px
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            transition: transform .6s;
+            transform-style: preserve-3d
+        }
+
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg)
+        }
+
+        .flip-card-front,
+        .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 14px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, .08);
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .flip-card-front {
+            background: #fff;
+            font-weight: 600
+        }
+
+        .flip-card-back {
+            background: #fafafa;
+            transform: rotateY(180deg);
+            flex-direction: column;
+            padding: 1rem;
+            text-align: center
+        }
+
+        .flip-card-back p {
+            font-size: .85rem;
+            margin: .5rem 0 1rem
+        }
+
+        button.use-it {
+            background: #4f6df5;
+            color: #fff;
+            padding: .55rem 1.4rem;
+            border-radius: 99px
+        }
+
+        /* ————— MODAL / STEPPER ————— */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999
+        }
+
+        .modal.active {
+            display: flex
+        }
+
+        .modal-content {
+            background: #fff;
+            width: 92%;
+            max-width: 500px;
+            border-radius: 14px;
+            padding: 1.6rem 1.8rem;
+            max-height: 90vh;
+            overflow: auto;
+            position: relative
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            background: none;
+            font-size: 1.6rem
+        }
+
+        .step {
+            display: none
+        }
+
+        .step.active {
+            display: block
+        }
+
+        .step textarea {
+            width: 100%;
+            min-height: 120px;
+            margin: 1rem 0;
+            padding: .75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px
+        }
+
+        .step .box {
+            min-height: 120px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: .75rem;
+            margin: 1rem 0
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: .6rem;
+            margin-top: .5rem
+        }
+
+        .actions button {
+            padding: .5rem 1rem;
+            border-radius: 5px;
+            background: #4f6df5;
+            color: #fff
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>From One-Shot to Iterative Prompts</h1>
+        <p>These cards are starting points. Click <strong>Use&nbsp;it</strong> to launch a guided six-step refinement
+            flow that personalises, critiques and resets your prompt to avoid drift or hallucination.</p>
+
+        <div class="infographic" aria-label="Six-step prompt workflow">
+            <div class="center">Prompt<br>Cycle</div>
+            <ul class="ring">
+                <li>Seed</li>
+                <li>Clarify</li>
+                <li>Draft</li>
+                <li>Critique</li>
+                <li>Refine</li>
+                <li>Summarise<br>&amp; Reset</li>
+            </ul>
+        </div>
+    </header>
+
+    <main>
+        <section class="grid">
+            <!-- Beginner card prototype -->
+            <div class="flip-card" id="card1">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">Create a Case Study</div>
+
+                    <div class="flip-card-back">
+                        <p><em>Prompt:</em><br>
+                            “Create a detailed patient case study on {topic} for {audience_level} students, including
+                            background, symptoms, and diagnostic questions.”</p>
+                        <button class="use-it"
+                            data-prompt="Create a detailed patient case study on {topic} for {audience_level} students, including background, symptoms, and diagnostic questions.">
+                            Use it
+                        </button>
+                        <small>Why it works: placeholders keep context flexible without losing focus.</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ————— MODAL WIZARD ————— -->
+    <div class="modal" id="wizard">
+        <div class="modal-content">
+            <button class="close-modal" aria-label="Close wizard">&times;</button>
+
+            <div class="step" data-step="1">
+                <h2>1 Seed</h2>
+                <textarea id="seedBox"></textarea>
+                <div class="actions"><button class="next">Continue</button></div>
+            </div>
+
+            <div class="step" data-step="2">
+                <h2>2 Clarify</h2>
+                <p>Ask me any clarifying questions before drafting.</p>
+                <textarea id="clarifyBox" placeholder="Model: What patient age range?&#10;You: 50–65"></textarea>
+                <div class="actions"><button class="back">Back</button><button class="next">Generate Qs</button></div>
+            </div>
+
+            <div class="step" data-step="3">
+                <h2>3 Draft</h2>
+                <div id="draftBox" class="box">(Model draft will appear here)</div>
+                <div class="actions"><button class="back">Back</button><button class="next">Generate Draft</button>
+                </div>
+            </div>
+
+            <div class="step" data-step="4">
+                <h2>4 Critique</h2>
+                <div id="critiqueBox" class="box">(Self-evaluation will appear here)</div>
+                <div class="actions"><button class="back">Back</button><button class="next">Self-Evaluate</button></div>
+            </div>
+
+            <div class="step" data-step="5">
+                <h2>5 Refine</h2>
+                <div id="refineBox" class="box">(Refined answer will appear here)</div>
+                <div class="actions"><button class="back">Back</button><button class="next">Fix &amp; Retry</button>
+                </div>
+            </div>
+
+            <div class="step" data-step="6">
+                <h2>6 Summarise &amp; Reset</h2>
+                <textarea id="summaryBox" placeholder="Final summary…"></textarea>
+                <div class="actions"><button class="back">Back</button><button id="copyBtn">Copy Summary</button></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ——— FLIP CARD & LAUNCH WIZARD ——— */
+        const card = document.getElementById('card1');
+        card.addEventListener('click', () => card.classList.toggle('flipped'));
+        card.querySelector('.use-it').addEventListener('click', e => {
+            e.stopPropagation();
+            card.classList.remove('flipped');
+            document.getElementById('seedBox').value = e.target.dataset.prompt;
+            openWizard();
+        });
+
+        /* ——— WIZARD NAVIGATION ——— */
+        const wizard = document.getElementById('wizard');
+        const steps = wizard.querySelectorAll('.step');
+        let stepIdx = 1;
+
+        function showStep(n) {
+            steps.forEach(s => s.classList.toggle('active', s.dataset.step == n));
+            stepIdx = n;
+        }
+        function openWizard() { wizard.classList.add('active'); showStep(1); }
+        function closeWizard() { wizard.classList.remove('active'); }
+
+        wizard.addEventListener('click', e => { if (e.target === wizard) closeWizard(); });
+        wizard.querySelector('.close-modal').onclick = closeWizard;
+        wizard.querySelectorAll('.next').forEach(btn => {
+            btn.onclick = () => showStep(Math.min(stepIdx + 1, 6));
+        });
+        wizard.querySelectorAll('.back').forEach(btn => {
+            btn.onclick = () => showStep(Math.max(stepIdx - 1, 1));
+        });
+
+        /* ——— COPY SUMMARY ——— */
+        document.getElementById('copyBtn').onclick = () => {
+            const text = document.getElementById('summaryBox').value.trim();
+            if (!text) { alert('Nothing to copy yet!'); return; }
+            navigator.clipboard.writeText(text).then(() =>
+                alert('Summary copied to clipboard 📋'));
+        };
+
+        /* ——— PULSE HIGHLIGHT ON RING CLICK ——— */
+        document.querySelectorAll('.ring li').forEach(li => {
+            li.addEventListener('click', () => {
+                li.classList.add('pulse');
+                setTimeout(() => li.classList.remove('pulse'), 600);
+            });
+        });
+    </script>
+</body>
+
+</html>
