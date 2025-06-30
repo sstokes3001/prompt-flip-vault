@@ -15,3 +15,9 @@ __pycache__/
 
 # IDE folders
 .vscode/
+
+# Ignore build/content folder
+content/
+
+# Ignore Python helper script (if you don’t want it in the repo)
+create_structure.py

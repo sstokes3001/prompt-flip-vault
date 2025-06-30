@@ -208,47 +208,37 @@
             text-align: center
         }
 
-        /* ── Prompt Preview Styling ── */
-        .prompt-label {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            /* Space between label and sentence */
-        }
-
-        .prompt-text {
+        .flip-card-back p {
             font-size: .85rem;
-            line-height: 1.4;
-            padding: 0 1rem;
-            /* Give text some breathing room */
-            margin-bottom: 1rem;
-            /* Space between sentence and button */
+            margin: .5rem 0 1rem
         }
 
-        /* Interactive placeholder styling */
-        .placeholder {
-            background-color: #e0e6f2;
-            color: #4f6df5;
-            padding: 0.1em 0.5em;
-            border-radius: 4px;
-            cursor: text;
-            font-weight: 500;
-            transition: background-color 0.2s ease;
+        /* ── Prompt Preview Styling ── */
+        .flip-card-back p {
+            /* add breathing room before the sentence */
+            margin-top: 0.75rem !important;
+
+            /* make the prompt text larger and bold */
+            font-size: 1rem !important;
+            font-weight: normal !important;
+            line-height: 1.4 !important;
         }
 
-        .placeholder:focus {
-            background-color: #fff;
-            outline: 2px solid #4f6df5;
-            box-shadow: 0 0 5px rgba(79, 109, 245, 0.5);
+        /* unbold and separate the “Prompt:” label */
+        .flip-card-back p em {
+            display: block !important;
+            /* force it onto its own line */
+            margin-bottom: 0.25rem !important;
+            /* space before the actual prompt */
+            font-weight: normal !important;
+            /* no bold on the label */
         }
 
         button.use-it {
             background: #4f6df5;
             color: #fff;
             padding: .55rem 1.4rem;
-            border-radius: 99px;
-            margin-top: 1rem;
-            /* Added margin for spacing */
+            border-radius: 99px
         }
 
         /* ————— MODAL / STEPPER ————— */
@@ -355,14 +345,14 @@
                     <div class="flip-card-front">Create a Case Study</div>
 
                     <div class="flip-card-back">
-                        <div class="prompt-label">Prompt:</div>
-                        <p class="prompt-text">“Create a detailed patient case study on <span class="placeholder"
-                                id="topic-placeholder" contenteditable="true"
-                                data-original-text="{topic}">{topic}</span> for <span class="placeholder"
-                                id="audience-placeholder" contenteditable="true"
-                                data-original-text="{audience level}">{audience level}</span> students, including
+                        <p><em>Prompt:</em><br>
+                            “Create a detailed patient case study on {topic} for {audience level} students, including
                             background, symptoms, and diagnostic questions.”</p>
-                        <button class="use-it">Use it</button>
+                        <button class="use-it"
+                            data-prompt="Create a detailed patient case study on {topic} for {audience level} students, including background, symptoms, and diagnostic questions.">
+                            Use it
+                        </button>
+
                     </div>
                 </div>
             </div>
@@ -416,125 +406,51 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        /* ——— FLIP CARD & LAUNCH WIZARD ——— */
+        const card = document.getElementById('card1');
+        card.addEventListener('click', () => card.classList.toggle('flipped'));
+        card.querySelector('.use-it').addEventListener('click', e => {
+            e.stopPropagation();
+            card.classList.remove('flipped');
+            document.getElementById('seedBox').value = '/n' + e.target.dataset.prompt;
+            openWizard();
+        });
 
-            /* ——— INTERACTIVE PLACEHOLDERS ——— */
-            const useItBtn = document.querySelector('#card1 .use-it');
-            const placeholders = document.querySelectorAll('.placeholder');
+        /* ——— WIZARD NAVIGATION ——— */
+        const wizard = document.getElementById('wizard');
+        const steps = wizard.querySelectorAll('.step');
+        let stepIdx = 1;
 
-            // Function to update the "Use it" button's data attribute
-            function updatePromptData() {
-                const topic = document.getElementById('topic-placeholder').textContent;
-                const audience = document.getElementById('audience-placeholder').textContent;
-                // Reconstruct the prompt string with the current placeholder values
-                const newPrompt = `Create a detailed patient case study on ${topic} for ${audience} students, including background, symptoms, and diagnostic questions.`;
-                // Update the button's dataset
-                useItBtn.dataset.prompt = newPrompt;
-            }
+        function showStep(n) {
+            steps.forEach(s => s.classList.toggle('active', s.dataset.step == n));
+            stepIdx = n;
+        }
+        function openWizard() { wizard.classList.add('active'); showStep(1); }
+        function closeWizard() { wizard.classList.remove('active'); }
 
-            placeholders.forEach(span => {
-                const originalText = span.dataset.originalText;
+        wizard.addEventListener('click', e => { if (e.target === wizard) closeWizard(); });
+        wizard.querySelector('.close-modal').onclick = closeWizard;
+        wizard.querySelectorAll('.next').forEach(btn => {
+            btn.onclick = () => showStep(Math.min(stepIdx + 1, 6));
+        });
+        wizard.querySelectorAll('.back').forEach(btn => {
+            btn.onclick = () => showStep(Math.max(stepIdx - 1, 1));
+        });
 
-                // When you click/focus on a placeholder
-                span.addEventListener('focus', () => {
-                    // If it's still the default text, select it all for easy overwriting
-                    if (span.textContent === originalText) {
-                        // Using setTimeout to ensure the selection happens after the focus event
-                        setTimeout(() => {
-                            document.execCommand('selectAll', false, null);
-                        }, 1);
-                    }
-                });
+        /* ——— COPY SUMMARY ——— */
+        document.getElementById('copyBtn').onclick = () => {
+            const text = document.getElementById('summaryBox').value.trim();
+            if (!text) { alert('Nothing to copy yet!'); return; }
+            navigator.clipboard.writeText(text).then(() =>
+                alert('Summary copied to clipboard 📋'));
+        };
 
-                // When you click away from a placeholder
-                span.addEventListener('blur', () => {
-                    // If you leave it empty, restore the original placeholder text
-                    if (span.textContent.trim() === '') {
-                        span.textContent = originalText;
-                    }
-                    updatePromptData(); // Update prompt when leaving the field
-                });
-
-                // Update the prompt in real-time as you type
-                span.addEventListener('keyup', updatePromptData);
+        /* ——— PULSE HIGHLIGHT ON RING CLICK ——— */
+        document.querySelectorAll('.ring li').forEach(li => {
+            li.addEventListener('click', () => {
+                li.classList.add('pulse');
+                setTimeout(() => li.classList.remove('pulse'), 600);
             });
-
-            // Set the initial prompt data when the page loads
-            updatePromptData();
-
-
-            /* ——— FLIP CARD & LAUNCH WIZARD ——— */
-            const card = document.getElementById('card1');
-            card.addEventListener('click', (e) => {
-                if (!e.target.matches('.use-it') && !e.target.matches('.placeholder')) {
-                    card.classList.toggle('flipped');
-                }
-            });
-
-            useItBtn.addEventListener('click', e => {
-                e.stopPropagation();
-                // Ensure the final prompt data is up-to-date before opening wizard
-                updatePromptData();
-                document.getElementById('seedBox').value = useItBtn.dataset.prompt;
-                openWizard();
-            });
-
-            /* ——— WIZARD NAVIGATION ——— */
-            const wizard = document.getElementById('wizard');
-            const steps = wizard.querySelectorAll('.step');
-            let stepIdx = 1;
-
-            function showStep(n) {
-                steps.forEach(s => s.classList.toggle('active', s.dataset.step == n));
-                stepIdx = n;
-            }
-
-            function openWizard() {
-                wizard.classList.add('active');
-                showStep(1);
-            }
-
-            function closeWizard() {
-                wizard.classList.remove('active');
-            }
-
-            wizard.addEventListener('click', e => {
-                if (e.target === wizard) closeWizard();
-            });
-            wizard.querySelector('.close-modal').onclick = closeWizard;
-            wizard.querySelectorAll('.next').forEach(btn => {
-                btn.onclick = () => showStep(Math.min(stepIdx + 1, 6));
-            });
-            wizard.querySelectorAll('.back').forEach(btn => {
-                btn.onclick = () => showStep(Math.max(stepIdx - 1, 1));
-            });
-
-            /* ——— COPY SUMMARY ——— */
-            document.getElementById('copyBtn').onclick = () => {
-                const text = document.getElementById('summaryBox').value.trim();
-                if (!text) {
-                    const btn = document.getElementById('copyBtn');
-                    const originalText = btn.textContent;
-                    btn.textContent = 'Nothing to copy!';
-                    setTimeout(() => btn.textContent = originalText, 2000);
-                    return;
-                }
-                navigator.clipboard.writeText(text).then(() => {
-                    const btn = document.getElementById('copyBtn');
-                    const originalText = btn.textContent;
-                    btn.textContent = 'Copied! 📋';
-                    setTimeout(() => btn.textContent = originalText, 2000);
-                });
-            };
-
-            /* ——— PULSE HIGHLIGHT ON RING CLICK ——— */
-            document.querySelectorAll('.ring li').forEach(li => {
-                li.addEventListener('click', () => {
-                    li.classList.add('pulse');
-                    setTimeout(() => li.classList.remove('pulse'), 600);
-                });
-            });
-
         });
     </script>
 </body>
